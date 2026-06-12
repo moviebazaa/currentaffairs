@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
 
-# ----------------- DATABASE SETUP (PostgreSQL with SSL support) -----------------
+# ----------------- DATABASE SETUP -----------------
 database_url = os.environ.get('DATABASE_URL')
 if database_url:
     if database_url.startswith("postgres://"):
@@ -30,7 +30,8 @@ login_manager.login_view = 'admin_login'
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128), nullable=False)
+    # Text – no length limit, works with all hash lengths
+    password_hash = db.Column(db.Text, nullable=False)
 
 class News(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -121,10 +122,7 @@ def delete_news(news_id):
     flash('News deleted.', 'info')
     return redirect(url_for('admin_dashboard'))
 
-# ----------------- REPLACEMENT FOR before_first_request -----------------
-# We use a simple flag and before_request to run initialization only once.
-# This works with any WSGI server (gunicorn included) and Flask >=2.3.
-
+# ----------------- DATABASE INITIALIZATION (safe) -----------------
 @app.before_request
 def initialize():
     if not getattr(g, '_db_initialized', False):
