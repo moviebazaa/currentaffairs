@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -10,20 +10,14 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-m
 
 # ----------------- DATABASE SETUP (PostgreSQL with SSL support) -----------------
 database_url = os.environ.get('DATABASE_URL')
-
 if database_url:
-    # Render or other platforms sometimes use "postgres://" – fix to "postgresql://"
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
-
-    # For Supabase, Neon, etc., SSL is required. We enforce it via query parameters.
     if 'sslmode' not in database_url:
         separator = '&' if '?' in database_url else '?'
         database_url += f'{separator}sslmode=require'
-
     app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 else:
-    # Fallback to SQLite for local development
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///news.db'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -50,7 +44,7 @@ class News(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ----------------- ROUTES - USER FRONTEND -----------------
+# ----------------- ROUTES (unchanged) -----------------
 @app.route('/')
 def home():
     news_list = News.query.order_by(News.date_posted.desc()).all()
@@ -61,7 +55,6 @@ def news_detail(news_id):
     news_item = News.query.get_or_404(news_id)
     return render_template('news_detail.html', news=news_item)
 
-# ----------------- ROUTES - ADMIN AUTH -----------------
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated:
@@ -84,7 +77,6 @@ def admin_logout():
     flash('Logged out.', 'info')
     return redirect(url_for('home'))
 
-# ----------------- ROUTES - ADMIN DASHBOARD -----------------
 @app.route('/admin')
 @login_required
 def admin_dashboard():
@@ -129,16 +121,20 @@ def delete_news(news_id):
     flash('News deleted.', 'info')
     return redirect(url_for('admin_dashboard'))
 
-# ----------------- INITIALIZE DATABASE & DEFAULT ADMIN -----------------
-@app.before_first_request
-def create_tables():
-    db.create_all()
-    # Create default admin user if none exists
-    if not User.query.filter_by(username='admin').first():
-        hashed = generate_password_hash('admin123')  # Change this later!
-        admin_user = User(username='admin', password_hash=hashed)
-        db.session.add(admin_user)
-        db.session.commit()
+# ----------------- REPLACEMENT FOR before_first_request -----------------
+# We use a simple flag and before_request to run initialization only once.
+# This works with any WSGI server (gunicorn included) and Flask >=2.3.
+
+@app.before_request
+def initialize():
+    if not getattr(g, '_db_initialized', False):
+        db.create_all()
+        if not User.query.filter_by(username='admin').first():
+            hashed = generate_password_hash('admin123')   # change after first login!
+            admin_user = User(username='admin', password_hash=hashed)
+            db.session.add(admin_user)
+            db.session.commit()
+        g._db_initialized = True
 
 if __name__ == '__main__':
     app.run(debug=True)
