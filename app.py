@@ -7,7 +7,25 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///news.db'
+
+# ----------------- DATABASE SETUP (PostgreSQL with SSL support) -----------------
+database_url = os.environ.get('DATABASE_URL')
+
+if database_url:
+    # Render or other platforms sometimes use "postgres://" – fix to "postgresql://"
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+    # For Supabase, Neon, etc., SSL is required. We enforce it via query parameters.
+    if 'sslmode' not in database_url:
+        separator = '&' if '?' in database_url else '?'
+        database_url += f'{separator}sslmode=require'
+
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+else:
+    # Fallback to SQLite for local development
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///news.db'
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -111,13 +129,13 @@ def delete_news(news_id):
     flash('News deleted.', 'info')
     return redirect(url_for('admin_dashboard'))
 
-# ----------------- DATABASE INITIALISATION -----------------
+# ----------------- INITIALIZE DATABASE & DEFAULT ADMIN -----------------
 @app.before_first_request
 def create_tables():
     db.create_all()
-    # create default admin user if not exists
+    # Create default admin user if none exists
     if not User.query.filter_by(username='admin').first():
-        hashed = generate_password_hash('admin123')  # change this!
+        hashed = generate_password_hash('admin123')  # Change this later!
         admin_user = User(username='admin', password_hash=hashed)
         db.session.add(admin_user)
         db.session.commit()
