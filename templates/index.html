@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PSC Kerala Hub</title>
+<style>
+  :root {
+    --kerala-green:#1a6b3c;--kerala-gold:#d4a017;
+    --dark-bg:#0d1b12;--surface:#132318;--surface2:#1c3025;
+    --text-primary:#e8f5ec;--text-muted:#7aab89;
+    --accent:#f5c842;--danger:#e05a4e;--info:#3b9ede;
+    --radius:10px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--dark-bg);color:var(--text-primary);min-height:100vh}
+  .app{display:flex;min-height:100vh}
+
+  /* SIDEBAR */
+  .sidebar{width:240px;background:var(--surface);border-right:1px solid #1e3a28;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+  .sidebar-logo{padding:20px 18px;border-bottom:1px solid #1e3a28;display:flex;align-items:center;gap:10px}
+  .logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--kerala-green),var(--kerala-gold));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .logo-text{font-size:15px;font-weight:bold;color:var(--accent);line-height:1.2}
+  .logo-sub{font-size:10px;color:var(--text-muted);letter-spacing:1px}
+  .nav{flex:1;padding:12px 0;overflow-y:auto}
+  .nav-section-label{font-size:10px;letter-spacing:1.5px;color:var(--text-muted);padding:14px 18px 6px;text-transform:uppercase}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;cursor:pointer;color:var(--text-muted);font-size:14px;transition:all .15s;border-left:3px solid transparent}
+  .nav-item:hover{background:var(--surface2);color:var(--text-primary)}
+  .nav-item.active{background:var(--surface2);color:var(--accent);border-left-color:var(--kerala-gold)}
+  .nav-item .icon{font-size:16px;width:20px;text-align:center}
+  .badge{margin-left:auto;background:var(--kerala-green);color:var(--accent);font-size:10px;padding:2px 6px;border-radius:10px;font-weight:600}
+  .user-info{padding:14px 18px;border-top:1px solid #1e3a28;display:flex;align-items:center;gap:10px;cursor:pointer}
+  .avatar{width:32px;height:32px;background:var(--kerala-green);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:bold;color:var(--accent);flex-shrink:0}
+  .user-name{font-size:13px;font-weight:600}
+  .user-role{font-size:11px;color:var(--text-muted)}
+
+  /* MAIN */
+  .main{margin-left:240px;flex:1;display:flex;flex-direction:column}
+  .topbar{background:var(--surface);border-bottom:1px solid #1e3a28;padding:14px 28px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:50}
+  .topbar h1{font-size:18px;flex:1}
+  .topbar-actions{display:flex;gap:10px}
+  .btn{padding:8px 16px;border-radius:var(--radius);border:none;cursor:pointer;font-size:13px;font-weight:600;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:var(--kerala-green);color:var(--accent)}
+  .btn-primary:hover{background:#22894e}
+  .btn-outline{background:transparent;color:var(--text-primary);border:1px solid #2a4535}
+  .btn-outline:hover{background:var(--surface2)}
+  .btn-danger{background:var(--danger);color:#fff;font-size:12px;padding:5px 10px}
+  .btn-sm{padding:4px 10px;font-size:11px}
+  .content{padding:28px;flex:1}
+
+  /* PAGES */
+  .page{display:none}
+  .page.active{display:block}
+
+  /* CARDS & GRIDS */
+  .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+  .stat-card{background:var(--surface);border:1px solid #1e3a28;border-radius:var(--radius);padding:20px;transition:border-color .2s}
+  .stat-card:hover{border-color:var(--kerala-green)}
+  .stat-label{font-size:12px;color:var(--text-muted);margin-bottom:6px;letter-spacing:.5px}
+  .stat-value{font-size:28px;font-weight:700;color:var(--accent)}
+  .stat-sub{font-size:11px;color:var(--text-muted);margin-top:4px}
+  .grid-2{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px}
+  .card{background:var(--surface);border:1px solid #1e3a28;border-radius:var(--radius);padding:20px}
+  .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+  .card-title{font-size:14px;font-weight:700}
+
+  /* TABLE */
+  .table-wrap{background:var(--surface);border:1px solid #1e3a28;border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+  .table-header{padding:14px 20px;border-bottom:1px solid #1e3a28;display:flex;justify-content:space-between;align-items:center}
+  table{width:100%;border-collapse:collapse}
+  th{padding:10px 16px;text-align:left;font-size:11px;letter-spacing:.8px;color:var(--text-muted);background:#0f2016;text-transform:uppercase;border-bottom:1px solid #1e3a28}
+  td{padding:12px 16px;font-size:13px;border-bottom:1px solid #141f17}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:#161f18}
+  .status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600}
+  .status-active{background:#0d2e12;color:#69d0a0}
+  .status-draft{background:#2a2a0d;color:#d0c069}
+  .status-inactive{background:#2a0f0d;color:#d08069}
+
+  /* NEWS */
+  .filter-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+  .filter-chip{padding:6px 14px;border-radius:20px;border:1px solid #2a4535;background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;transition:all .15s}
+  .filter-chip:hover,.filter-chip.active{background:var(--kerala-green);color:var(--accent);border-color:var(--kerala-green)}
+  .search-input{flex:1;padding:8px 14px;background:var(--surface);border:1px solid #2a4535;border-radius:8px;color:var(--text-primary);font-size:13px;min-width:200px}
+  .search-input:focus{outline:none;border-color:var(--kerala-green)}
+  .news-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  .news-card{background:var(--surface);border:1px solid #1e3a28;border-radius:var(--radius);overflow:hidden;transition:border-color .2s,transform .15s;cursor:pointer}
+  .news-card:hover{border-color:var(--kerala-green);transform:translateY(-2px)}
+  .news-category{padding:5px 12px;font-size:10px;letter-spacing:1px;font-weight:700;text-transform:uppercase}
+  .cat-Kerala{background:#1a3a1a;color:var(--accent)}
+  .cat-National{background:#1a3060;color:#74aaff}
+  .cat-International{background:#2d1a40;color:#c090ff}
+  .cat-Science,.cat-Science\ \&\ Tech{background:#0d3a22;color:#69d0a0}
+  .cat-Economy{background:#3a2a0a;color:#f0c060}
+  .cat-Sports{background:#2d0f3a;color:#c070f0}
+  .cat-Environment{background:#0d2a18;color:#90d0a0}
+  .news-body{padding:16px}
+  .news-title{font-size:14px;font-weight:600;line-height:1.5;margin-bottom:8px}
+  .news-excerpt{font-size:12px;color:var(--text-muted);line-height:1.5}
+  .news-footer{padding:10px 16px;border-top:1px solid #1e3a28;display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted)}
+  .read-btn{color:var(--kerala-gold);font-weight:600}
+
+  /* GK */
+  .gk-topics{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+  .gk-topic{background:var(--surface);border:1px solid #1e3a28;border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .2s;text-align:center}
+  .gk-topic:hover{border-color:var(--kerala-gold);background:var(--surface2);transform:translateY(-2px)}
+  .gk-icon{font-size:28px;margin-bottom:10px}
+  .gk-name{font-size:14px;font-weight:600;margin-bottom:4px}
+  .gk-count{font-size:11px;color:var(--text-muted)}
+
+  /* QUIZ */
+  .quiz-header{background:linear-gradient(135deg,var(--kerala-green) 0%,#0d3d22 100%);border-radius:var(--radius);padding:24px;margin-bottom:20px;border:1px solid #2d6040}
+  .quiz-title{font-size:20px;margin-bottom:6px;font-weight:700}
+  .quiz-meta{font-size:13px;color:#9fcfb0;display:flex;gap:20px}
+  .timer-bar{height:4px;background:#1e3a28;border-radius:2px;margin-top:12px;overflow:hidden}
+  .timer-fill{height:100%;background:var(--kerala-gold);border-radius:2px;transition:width 1s linear}
+  .question-card{background:var(--surface);border:1px solid #1e3a28;border-radius:var(--radius);padding:24px;margin-bottom:16px}
+  .question-num{font-size:11px;color:var(--text-muted);letter-spacing:1px;margin-bottom:8px}
+  .question-text{font-size:16px;line-height:1.6;margin-bottom:20px}
+  .options{display:flex;flex-direction:column;gap:10px}
+  .option{padding:12px 16px;border:1.5px solid #2a4535;border-radius:8px;cursor:pointer;font-size:14px;transition:all .15s;display:flex;align-items:center;gap:12px}
+  .option:hover{border-color:var(--kerala-green);background:#1a3024}
+  .option.selected{border-color:var(--kerala-gold);background:#1e3515;color:var(--accent)}
+  .option.correct{border-color:#4caf50;background:#0d2e12;color:#81c784}
+  .option.wrong{border-color:var(--danger);background:#2e0f0d;color:#ef9a9a}
+  .option-letter{width:26px;height:26px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+  .quiz-nav{display:flex;gap:10px;justify-content:space-between;margin-top:8px;align-items:center}
+  .quiz-score{font-size:13px;color:var(--text-muted)}
+
+  /* MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid #2a4535;border-radius:12px;padding:28px;width:480px;max-height:80vh;overflow-y:auto}
+  .modal-title{font-size:17px;font-weight:700;margin-bottom:18px}
+  .form-group{margin-bottom:14px}
+  .form-label{font-size:12px;color:var(--text-muted);margin-bottom:5px;display:block}
+  .form-input,.form-select,.form-textarea{width:100%;padding:9px 12px;background:var(--dark-bg);border:1px solid #2a4535;border-radius:7px;color:var(--text-primary);font-size:13px;font-family:inherit;transition:border-color .15s}
+  .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--kerala-green)}
+  .form-textarea{resize:vertical;min-height:80px}
+  .form-select option{background:var(--surface)}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+
+  /* LEADERBOARD */
+  .lb-item{background:var(--surface);border:1px solid #1e3a28;border-radius:8px;padding:14px 18px;display:flex;align-items:center;gap:14px;margin-bottom:10px}
+  .lb-rank{font-size:18px;font-weight:700;width:32px;text-align:center}
+  .lb-rank.gold{color:#f5c842}.lb-rank.silver{color:#b0b0b0}.lb-rank.bronze{color:#cd7f32}.lb-rank.other{color:var(--text-muted)}
+
+  /* ADMIN */
+  .admin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+  .admin-card{background:var(--surface);border:1px solid #1e3a28;border-radius:var(--radius);padding:20px;cursor:pointer;transition:all .2s}
+  .admin-card:hover{border-color:var(--kerala-green);transform:translateY(-1px)}
+  .admin-card-icon{font-size:24px;margin-bottom:10px}
+  .admin-card-title{font-size:14px;font-weight:700;margin-bottom:4px}
+  .admin-card-desc{font-size:12px;color:var(--text-muted)}
+
+  /* PROGRESS */
+  .progress-bar-wrap{margin:8px 0}
+  .progress-label{display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px}
+  .progress-bar{height:6px;background:#1e3a28;border-radius:3px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--kerala-green),var(--kerala-gold));border-radius:3px}
+
+  /* TOAST */
+  .toast{position:fixed;bottom:24px;right:24px;background:var(--kerala-green);color:var(--accent);padding:12px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none}
+  .toast.show{opacity:1;transform:translateY(0)}
+
+  /* BANNER */
+  .kerala-banner{background:linear-gradient(90deg,#0d2a18,#1a6b3c,#0d2a18);padding:8px 20px;text-align:center;font-size:12px;letter-spacing:1px;color:var(--accent);border-bottom:1px solid #1e3a28;position:fixed;top:0;left:0;right:0;z-index:300}
+  .app{padding-top:33px}
+
+  .empty-state{text-align:center;padding:40px;color:var(--text-muted)}
+  .empty-state .icon{font-size:40px;margin-bottom:12px}
+  .spinner{text-align:center;padding:20px;color:var(--text-muted);font-size:13px}
+
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%)}.main{margin-left:0}
+    .stats-grid{grid-template-columns:repeat(2,1fr)}
+    .grid-2,.news-grid,.gk-topics,.admin-grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<div class="kerala-banner">🌿 PSC Kerala Hub — Serving Aspirants Across All 14 Districts</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🏛️</div>
+      <div>
+        <div class="logo-text">PSC Kerala</div>
+        <div class="logo-sub">HUB</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-section-label">Student Area</div>
+      <div class="nav-item active" onclick="navigate('dashboard')"><span class="icon">📊</span> Dashboard</div>
+      <div class="nav-item" onclick="navigate('current-affairs')"><span class="icon">📰</span> Current Affairs <span class="badge">New</span></div>
+      <div class="nav-item" onclick="navigate('gk')"><span class="icon">🧠</span> GK Sections</div>
+      <div class="nav-item" onclick="navigate('quiz')"><span class="icon">✏️</span> Daily Quiz</div>
+      <div class="nav-item" onclick="navigate('mock-test')"><span class="icon">📝</span> Mock Tests</div>
+      <div class="nav-section-label">Admin</div>
+      <div class="nav-item" onclick="navigate('admin')"><span class="icon">⚙️</span> Admin Panel</div>
+      <div class="nav-item" onclick="navigate('admin-questions')"><span class="icon">❓</span> Questions</div>
+      <div class="nav-item" onclick="navigate('admin-users')"><span class="icon">👥</span> Users</div>
+    </nav>
+    <div class="user-info">
+      <div class="avatar">AD</div>
+      <div><div class="user-name">Admin</div><div class="user-role">Administrator</div></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <div class="topbar-actions">
+        <button class="btn btn-outline" onclick="loadStats()">🔄 Refresh</button>
+        <button class="btn btn-primary" onclick="openModal('add-question-modal')">+ Add Question</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="stat-label">TOTAL USERS</div><div class="stat-value" id="stat-users">—</div><div class="stat-sub">Registered students</div></div>
+          <div class="stat-card"><div class="stat-label">QUESTION BANK</div><div class="stat-value" id="stat-questions">—</div><div class="stat-sub">Across all subjects</div></div>
+          <div class="stat-card"><div class="stat-label">ARTICLES</div><div class="stat-value" id="stat-articles">—</div><div class="stat-sub">Current affairs published</div></div>
+          <div class="stat-card"><div class="stat-label">MOCK TESTS</div><div class="stat-value" id="stat-tests">—</div><div class="stat-sub">Available tests</div></div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header"><span class="card-title">🚀 Quick Actions</span></div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <button class="btn btn-primary" style="justify-content:flex-start" onclick="navigate('quiz')">✏️ Start Daily Quiz</button>
+              <button class="btn btn-outline" style="justify-content:flex-start" onclick="openModal('add-question-modal')">➕ Add Question to Bank</button>
+              <button class="btn btn-outline" style="justify-content:flex-start" onclick="openModal('add-article-modal')">📰 Publish Current Affairs</button>
+              <button class="btn btn-outline" style="justify-content:flex-start" onclick="openModal('add-test-modal')">📝 Create Mock Test</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header"><span class="card-title">📊 Subject Coverage</span></div>
+            <div id="subject-progress">
+              <div class="spinner">Loading...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CURRENT AFFAIRS -->
+      <div class="page" id="page-current-affairs">
+        <div class="filter-bar">
+          <input type="text" class="search-input" id="news-search" placeholder="🔍 Search articles..." oninput="filterNews()">
+          <button class="filter-chip active" onclick="setNewsFilter(this,'')">All</button>
+          <button class="filter-chip" onclick="setNewsFilter(this,'Kerala')">Kerala</button>
+          <button class="filter-chip" onclick="setNewsFilter(this,'National')">National</button>
+          <button class="filter-chip" onclick="setNewsFilter(this,'Science & Tech')">Science</button>
+          <button class="filter-chip" onclick="setNewsFilter(this,'Economy')">Economy</button>
+          <button class="filter-chip" onclick="setNewsFilter(this,'Sports')">Sports</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('add-article-modal')">+ Add Article</button>
+        </div>
+        <div class="news-grid" id="news-grid"><div class="spinner">Loading articles...</div></div>
+      </div>
+
+      <!-- GK SECTIONS -->
+      <div class="page" id="page-gk">
+        <div class="gk-topics">
+          <div class="gk-topic" onclick="startSubjectQuiz('Kerala History')"><div class="gk-icon">🏛️</div><div class="gk-name">Kerala History</div><div class="gk-count" id="count-Kerala History">Loading...</div></div>
+          <div class="gk-topic" onclick="startSubjectQuiz('Indian Geography')"><div class="gk-icon">🗺️</div><div class="gk-name">Indian Geography</div><div class="gk-count" id="count-Indian Geography">Loading...</div></div>
+          <div class="gk-topic" onclick="startSubjectQuiz('Indian Polity')"><div class="gk-icon">⚖️</div><div class="gk-name">Indian Polity</div><div class="gk-count" id="count-Indian Polity">Loading...</div></div>
+          <div class="gk-topic" onclick="startSubjectQuiz('General Science')"><div class="gk-icon">🔬</div><div class="gk-name">General Science</div><div class="gk-count" id="count-General Science">Loading...</div></div>
+          <div class="gk-topic" onclick="startSubjectQuiz('Economics')"><div class="gk-icon">💰</div><div class="gk-name">Economics</div><div class="gk-count" id="count-Economics">Loading...</div></div>
+          <div class="gk-topic" onclick="startSubjectQuiz('Mathematics')"><div class="gk-icon">🔢</div><div class="gk-name">Mathematics</div><div class="gk-count" id="count-Mathematics">Loading...</div></div>
+          <div class="gk-topic" onclick="startSubjectQuiz('Kerala Geography')"><div class="gk-icon">🌿</div><div class="gk-name">Kerala Geography</div><div class="gk-count" id="count-Kerala Geography">Loading...</div></div>
+          <div class="gk-topic" onclick="startSubjectQuiz('IT & Computers')"><div class="gk-icon">💻</div><div class="gk-name">IT & Computers</div><div class="gk-count" id="count-IT & Computers">Loading...</div></div>
+          <div class="gk-topic" onclick="startSubjectQuiz('Current Affairs')"><div class="gk-icon">📰</div><div class="gk-name">Current Affairs</div><div class="gk-count" id="count-Current Affairs">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- QUIZ -->
+      <div class="page" id="page-quiz">
+        <div class="quiz-header">
+          <div class="quiz-title" id="quiz-title">📝 Daily Quiz</div>
+          <div class="quiz-meta">
+            <span>⏱️ 60 sec / question</span>
+            <span id="quiz-count-label">10 Questions</span>
+            <span id="quiz-subject-label">Mixed</span>
+          </div>
+          <div class="timer-bar"><div class="timer-fill" id="timer-fill" style="width:100%"></div></div>
+        </div>
+        <div id="quiz-container"><div class="spinner">Loading questions...</div></div>
+        <div class="quiz-nav" id="quiz-nav" style="display:none">
+          <div class="quiz-score" id="quiz-score"></div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-outline" id="btn-prev" onclick="prevQuestion()">← Prev</button>
+            <button class="btn btn-primary" id="btn-next" onclick="nextQuestion()">Next →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MOCK TESTS -->
+      <div class="page" id="page-mock-test">
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="card-title">Available Mock Tests</span>
+            <button class="btn btn-primary" onclick="openModal('add-test-modal')">+ Create Test</button>
+          </div>
+          <div id="tests-table-body">
+            <div class="spinner">Loading tests...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN PANEL -->
+      <div class="page" id="page-admin">
+        <div class="admin-grid">
+          <div class="admin-card" onclick="navigate('admin-questions')"><div class="admin-card-icon">❓</div><div class="admin-card-title">Question Bank</div><div class="admin-card-desc">Add, edit, delete quiz questions by subject</div></div>
+          <div class="admin-card" onclick="openModal('add-article-modal')"><div class="admin-card-icon">📰</div><div class="admin-card-title">Current Affairs</div><div class="admin-card-desc">Publish and manage daily current affairs</div></div>
+          <div class="admin-card" onclick="openModal('add-test-modal')"><div class="admin-card-icon">📝</div><div class="admin-card-title">Mock Tests</div><div class="admin-card-desc">Create full-length PSC mock tests</div></div>
+          <div class="admin-card" onclick="navigate('admin-users')"><div class="admin-card-icon">👥</div><div class="admin-card-title">User Management</div><div class="admin-card-desc">View and manage registered users</div></div>
+          <div class="admin-card"><div class="admin-card-icon">📊</div><div class="admin-card-title">Analytics</div><div class="admin-card-desc">Quiz performance and engagement stats</div></div>
+          <div class="admin-card"><div class="admin-card-icon">📢</div><div class="admin-card-title">Notifications</div><div class="admin-card-desc">Send announcements to all users</div></div>
+        </div>
+      </div>
+
+      <!-- ADMIN QUESTIONS -->
+      <div class="page" id="page-admin-questions">
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="card-title">Question Bank</span>
+            <button class="btn btn-primary" onclick="openModal('add-question-modal')">+ Add Question</button>
+          </div>
+          <div id="questions-table">
+            <div class="spinner">Loading questions...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ADMIN USERS -->
+      <div class="page" id="page-admin-users">
+        <div class="table-wrap">
+          <div class="table-header">
+            <span class="card-title">Registered Users</span>
+            <button class="btn btn-primary" onclick="openModal('add-user-modal')">+ Add User</button>
+          </div>
+          <div id="users-table">
+            <div class="spinner">Loading users...</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="add-question-modal">
+  <div class="modal">
+    <div class="modal-title">➕ Add New Question</div>
+    <div class="form-group"><label class="form-label">Question Text *</label><textarea class="form-textarea" id="q-text" placeholder="Enter the question..."></textarea></div>
+    <div class="form-group"><label class="form-label">Option A *</label><input type="text" class="form-input" id="q-a" placeholder="Option A"></div>
+    <div class="form-group"><label class="form-label">Option B *</label><input type="text" class="form-input" id="q-b" placeholder="Option B"></div>
+    <div class="form-group"><label class="form-label">Option C *</label><input type="text" class="form-input" id="q-c" placeholder="Option C"></div>
+    <div class="form-group"><label class="form-label">Option D *</label><input type="text" class="form-input" id="q-d" placeholder="Option D"></div>
+    <div class="form-group"><label class="form-label">Correct Answer *</label><select class="form-select" id="q-ans"><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+    <div class="form-group"><label class="form-label">Subject *</label><select class="form-select" id="q-subject"><option>Kerala History</option><option>Indian Polity</option><option>General Science</option><option>Indian Geography</option><option>Kerala Geography</option><option>Economics</option><option>Current Affairs</option><option>Mathematics</option><option>IT & Computers</option></select></div>
+    <div class="form-group"><label class="form-label">Difficulty</label><select class="form-select" id="q-diff"><option>Easy</option><option>Medium</option><option>Hard</option></select></div>
+    <div class="form-group"><label class="form-label">Explanation</label><textarea class="form-textarea" id="q-exp" placeholder="Brief explanation of the correct answer..."></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('add-question-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveQuestion()">Save Question</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="add-article-modal">
+  <div class="modal">
+    <div class="modal-title">📰 Add Current Affairs Article</div>
+    <div class="form-group"><label class="form-label">Headline *</label><input type="text" class="form-input" id="a-title" placeholder="Article headline..."></div>
+    <div class="form-group"><label class="form-label">Category *</label><select class="form-select" id="a-category"><option>Kerala</option><option>National</option><option>International</option><option>Science & Tech</option><option>Economy</option><option>Sports</option><option>Environment</option></select></div>
+    <div class="form-group"><label class="form-label">Article Body *</label><textarea class="form-textarea" style="min-height:120px" id="a-body" placeholder="Write the article..."></textarea></div>
+    <div class="form-group"><label class="form-label">PSC Tags</label><input type="text" class="form-input" id="a-tags" placeholder="e.g. LDC, VEO, Police"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('add-article-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveArticle()">Publish</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="add-test-modal">
+  <div class="modal">
+    <div class="modal-title">📝 Create Mock Test</div>
+    <div class="form-group"><label class="form-label">Test Name *</label><input type="text" class="form-input" id="t-name" placeholder="e.g. LDC Full Syllabus Set B"></div>
+    <div class="form-group"><label class="form-label">Target Post</label><select class="form-select" id="t-post"><option>Lower Division Clerk (LDC)</option><option>Village Extension Officer (VEO)</option><option>Civil Police Officer</option><option>Degree Level Common</option><option>Plus Two Level</option></select></div>
+    <div class="form-group"><label class="form-label">Number of Questions</label><input type="number" class="form-input" id="t-num" value="100" min="10" max="200"></div>
+    <div class="form-group"><label class="form-label">Duration (minutes)</label><input type="number" class="form-input" id="t-dur" value="75"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('add-test-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTest()">Create Test</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="add-user-modal">
+  <div class="modal">
+    <div class="modal-title">👤 Add User</div>
+    <div class="form-group"><label class="form-label">Full Name *</label><input type="text" class="form-input" id="u-name" placeholder="Full name"></div>
+    <div class="form-group"><label class="form-label">Email *</label><input type="email" class="form-input" id="u-email" placeholder="email@example.com"></div>
+    <div class="form-group"><label class="form-label">District</label><select class="form-select" id="u-district"><option>Thiruvananthapuram</option><option>Kollam</option><option>Pathanamthitta</option><option>Alappuzha</option><option>Kottayam</option><option>Idukki</option><option>Ernakulam</option><option>Thrissur</option><option>Palakkad</option><option>Malappuram</option><option>Kozhikode</option><option>Wayanad</option><option>Kannur</option><option>Kasaragod</option></select></div>
+    <div class="form-group"><label class="form-label">Role</label><select class="form-select" id="u-role"><option>student</option><option>admin</option></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('add-user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()">Add User</button>
+    </div>
+  </div>
+</div>
+
+<!-- ARTICLE VIEW MODAL -->
+<div class="modal-overlay" id="article-view-modal">
+  <div class="modal" style="width:560px">
+    <div class="modal-title" id="view-article-title"></div>
+    <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px" id="view-article-meta"></div>
+    <div style="font-size:14px;line-height:1.8;color:var(--text-primary)" id="view-article-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('article-view-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';  // same origin — Flask serves both frontend and API
+
+// ─── NAVIGATION ──────────────────────────────────────────
+const pageTitles = {
+  dashboard:'Dashboard','current-affairs':'Current Affairs',gk:'GK Sections',
+  quiz:'Daily Quiz','mock-test':'Mock Tests',admin:'Admin Panel',
+  'admin-questions':'Question Bank','admin-users':'Users'
+};
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const el = document.getElementById('page-'+page);
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(item=>{
+    if(item.getAttribute('onclick')&&item.getAttribute('onclick').includes("'"+page+"'"))
+      item.classList.add('active');
+  });
+  document.getElementById('page-title').textContent = pageTitles[page]||page;
+
+  if(page==='dashboard')     loadStats();
+  if(page==='current-affairs') loadArticles();
+  if(page==='gk')            loadGKCounts();
+  if(page==='quiz')          loadQuiz();
+  if(page==='mock-test')     loadTests();
+  if(page==='admin-questions') loadQuestionsTable();
+  if(page==='admin-users')   loadUsersTable();
+}
+
+// ─── MODAL ───────────────────────────────────────────────
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(o=>
+  o.addEventListener('click',e=>{ if(e.target===o) o.classList.remove('open'); })
+);
+
+// ─── TOAST ───────────────────────────────────────────────
+function toast(msg,ok=true){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=ok?'var(--kerala-green)':'var(--danger)';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ─── API HELPERS ─────────────────────────────────────────
+async function api(path,method='GET',body=null){
+  const opts={method,headers:{'Content-Type':'application/json'}};
+  if(body) opts.body=JSON.stringify(body);
+  const r=await fetch(API+path,opts);
+  if(!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+// ─── DASHBOARD ───────────────────────────────────────────
+async function loadStats(){
+  try{
+    const s=await api('/api/stats');
+    document.getElementById('stat-users').textContent=s.users;
+    document.getElementById('stat-questions').textContent=s.questions;
+    document.getElementById('stat-articles').textContent=s.articles;
+    document.getElementById('stat-tests').textContent=s.tests;
+    renderSubjectProgress(s.questions);
+  }catch(e){ console.error(e); }
+}
+
+function renderSubjectProgress(total){
+  const subjects=[
+    {name:'Kerala History',pct:92},{name:'Indian Polity',pct:85},
+    {name:'General Science',pct:78},{name:'Current Affairs',pct:61},{name:'Mathematics',pct:44}
+  ];
+  document.getElementById('subject-progress').innerHTML=subjects.map(s=>`
+    <div class="progress-bar-wrap">
+      <div class="progress-label"><span>${s.name}</span><span>${s.pct}%</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${s.pct}%"></div></div>
+    </div>`).join('');
+}
+
+// ─── CURRENT AFFAIRS ─────────────────────────────────────
+let allArticles=[],newsFilterCat='';
+
+async function loadArticles(){
+  document.getElementById('news-grid').innerHTML='<div class="spinner">Loading articles...</div>';
+  try{
+    allArticles=await api('/api/articles');
+    renderNews();
+  }catch(e){ document.getElementById('news-grid').innerHTML='<div class="empty-state"><div class="icon">⚠️</div><p>Could not load articles.</p></div>'; }
+}
+
+function renderNews(){
+  const search=document.getElementById('news-search').value.toLowerCase();
+  const filtered=allArticles.filter(a=>{
+    const matchCat=!newsFilterCat||a.category===newsFilterCat;
+    const matchSearch=!search||a.title.toLowerCase().includes(search)||a.body.toLowerCase().includes(search);
+    return matchCat&&matchSearch;
+  });
+  if(!filtered.length){
+    document.getElementById('news-grid').innerHTML='<div class="empty-state"><div class="icon">📭</div><p>No articles found.</p></div>';
+    return;
+  }
+  document.getElementById('news-grid').innerHTML=filtered.map(a=>`
+    <div class="news-card" onclick="viewArticle(${a.id})">
+      <div class="news-category cat-${a.category.replace(/ /g,'-')}">${a.category}</div>
+      <div class="news-body">
+        <div class="news-title">${a.title}</div>
+        <div class="news-excerpt">${a.body.substring(0,120)}...</div>
+      </div>
+      <div class="news-footer">
+        <span>${new Date(a.published).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</span>
+        <span class="read-btn">Read →</span>
+      </div>
+    </div>`).join('');
+}
+
+function setNewsFilter(el,cat){
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  newsFilterCat=cat;
+  renderNews();
+}
+
+function filterNews(){ renderNews(); }
+
+function viewArticle(id){
+  const a=allArticles.find(x=>x.id===id);
+  if(!a) return;
+  document.getElementById('view-article-title').textContent=a.title;
+  document.getElementById('view-article-meta').textContent=`${a.category} • ${new Date(a.published).toLocaleDateString('en-IN',{dateStyle:'long'})} • Tags: ${a.tags||'—'}`;
+  document.getElementById('view-article-body').textContent=a.body;
+  openModal('article-view-modal');
+}
+
+async function saveArticle(){
+  try{
+    await api('/api/articles','POST',{
+      title:document.getElementById('a-title').value,
+      body:document.getElementById('a-body').value,
+      category:document.getElementById('a-category').value,
+      tags:document.getElementById('a-tags').value
+    });
+    closeModal('add-article-modal');
+    toast('✅ Article published!');
+    if(document.getElementById('page-current-affairs').classList.contains('active')) loadArticles();
+  }catch(e){ toast('❌ Failed to save article',false); }
+}
+
+// ─── GK SECTION ──────────────────────────────────────────
+async function loadGKCounts(){
+  const subjects=['Kerala History','Indian Geography','Indian Polity','General Science',
+    'Economics','Mathematics','Kerala Geography','IT & Computers','Current Affairs'];
+  for(const s of subjects){
+    try{
+      const qs=await api(`/api/questions?subject=${encodeURIComponent(s)}&limit=999`);
+      const el=document.getElementById('count-'+s);
+      if(el) el.textContent=qs.length+' Questions';
+    }catch(e){}
+  }
+}
+
+function startSubjectQuiz(subject){
+  currentQuizSubject=subject;
+  navigate('quiz');
+}
+
+// ─── QUIZ ─────────────────────────────────────────────────
+let questions=[],currentQ=0,answered={},timerInterval,timerSec=60;
+let currentQuizSubject=null;
+
+async function loadQuiz(){
+  document.getElementById('quiz-container').innerHTML='<div class="spinner">Loading questions...</div>';
+  document.getElementById('quiz-nav').style.display='none';
+  try{
+    const url=currentQuizSubject
+      ? `/api/questions?subject=${encodeURIComponent(currentQuizSubject)}&limit=10`
+      : '/api/questions?limit=10';
+    questions=await api(url);
+    if(!questions.length){
+      document.getElementById('quiz-container').innerHTML='<div class="empty-state"><div class="icon">📭</div><p>No questions available. Add some from Admin Panel.</p></div>';
+      return;
+    }
+    currentQ=0; answered={};
+    document.getElementById('quiz-title').textContent=currentQuizSubject?`📝 ${currentQuizSubject} Quiz`:'📝 Daily Quiz';
+    document.getElementById('quiz-count-label').textContent=`${questions.length} Questions`;
+    document.getElementById('quiz-subject-label').textContent=currentQuizSubject||'Mixed GK';
+    document.getElementById('quiz-nav').style.display='flex';
+    renderQuestion();
+  }catch(e){
+    document.getElementById('quiz-container').innerHTML='<div class="empty-state"><div class="icon">⚠️</div><p>Could not load questions.</p></div>';
+  }
+}
+
+function renderQuestion(){
+  clearInterval(timerInterval);
+  const q=questions[currentQ];
+  const opts=['A','B','C','D'];
+  const userAnswer=answered[currentQ];
+  document.getElementById('quiz-container').innerHTML=`
+    <div class="question-card">
+      <div class="question-num">QUESTION ${currentQ+1} OF ${questions.length}</div>
+      <div class="question-text">${q.text}</div>
+      <div class="options">
+        ${opts.map(l=>{
+          let cls='option';
+          if(userAnswer){
+            if(l===q.answer) cls+=' correct';
+            else if(l===userAnswer&&userAnswer!==q.answer) cls+=' wrong';
+          }
+          return `<div class="${cls}" onclick="selectAnswer('${l}')" id="opt-${l}">
+            <span class="option-letter">${l}</span> ${q['option_'+l.toLowerCase()]}
+          </div>`;
+        }).join('')}
+      </div>
+      ${userAnswer&&q.explanation?`<div style="margin-top:14px;padding:12px;background:#0d2a18;border-radius:8px;font-size:13px;color:#9fcfb0">💡 ${q.explanation}</div>`:''}
+    </div>`;
+  document.getElementById('btn-prev').disabled=currentQ===0;
+  const score=Object.values(answered).filter((v,i)=>v===questions[i]?.answer).length;
+  document.getElementById('quiz-score').textContent=Object.keys(answered).length?`Score: ${score}/${Object.keys(answered).length}`:'';
+  if(!userAnswer) startTimer();
+}
+
+function startTimer(){
+  timerSec=60;
+  const fill=document.getElementById('timer-fill');
+  fill.style.width='100%';
+  timerInterval=setInterval(()=>{
+    timerSec--;
+    if(fill) fill.style.width=(timerSec/60*100)+'%';
+    if(timerSec<=0){ clearInterval(timerInterval); autoAnswer(); }
+  },1000);
+}
+
+function autoAnswer(){
+  if(!answered[currentQ]){ answered[currentQ]=''; renderQuestion(); }
+}
+
+function selectAnswer(letter){
+  if(answered[currentQ]!==undefined) return;
+  clearInterval(timerInterval);
+  answered[currentQ]=letter;
+  renderQuestion();
+}
+
+function nextQuestion(){
+  if(currentQ<questions.length-1){ currentQ++; renderQuestion(); }
+  else showResults();
+}
+
+function prevQuestion(){ if(currentQ>0){ currentQ--; renderQuestion(); } }
+
+function showResults(){
+  clearInterval(timerInterval);
+  const total=questions.length;
+  const score=questions.filter((q,i)=>answered[i]===q.answer).length;
+  const pct=Math.round(score/total*100);
+  document.getElementById('quiz-container').innerHTML=`
+    <div class="card" style="text-align:center;padding:40px">
+      <div style="font-size:48px;margin-bottom:10px">${pct>=80?'🏆':pct>=60?'👍':'📚'}</div>
+      <div style="font-size:28px;font-weight:700;color:var(--accent);margin-bottom:8px">${score}/${total}</div>
+      <div style="font-size:16px;color:var(--text-muted);margin-bottom:20px">${pct}% Score</div>
+      <button class="btn btn-primary" onclick="loadQuiz()">🔄 Retake Quiz</button>
+    </div>`;
+  document.getElementById('quiz-nav').style.display='none';
+}
+
+// ─── MOCK TESTS ───────────────────────────────────────────
+async function loadTests(){
+  try{
+    const tests=await api('/api/tests');
+    if(!tests.length){
+      document.getElementById('tests-table-body').innerHTML='<div class="empty-state"><div class="icon">📝</div><p>No tests yet.</p></div>';
+      return;
+    }
+    document.getElementById('tests-table-body').innerHTML=`
+      <table>
+        <thead><tr><th>Test Name</th><th>Post</th><th>Questions</th><th>Duration</th><th>Attempts</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${tests.map(t=>`
+          <tr>
+            <td><strong>${t.name}</strong></td>
+            <td>${t.target_post||'—'}</td>
+            <td>${t.num_questions}</td>
+            <td>${t.duration} min</td>
+            <td>${t.attempts}</td>
+            <td><span class="status-badge status-${t.status}">${t.status}</span></td>
+            <td>
+              ${t.status==='active'
+                ?'<button class="btn btn-primary btn-sm" onclick="navigate(\'quiz\')">Start</button>'
+                :`<button class="btn btn-outline btn-sm" onclick="publishTest(${t.id})">Publish</button>`}
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }catch(e){ document.getElementById('tests-table-body').innerHTML='<div class="spinner">Error loading tests.</div>'; }
+}
+
+async function publishTest(id){
+  try{ await api(`/api/tests/${id}/publish`,'POST'); toast('✅ Test published!'); loadTests(); }
+  catch(e){ toast('❌ Failed',false); }
+}
+
+async function saveTest(){
+  try{
+    await api('/api/tests','POST',{
+      name:document.getElementById('t-name').value,
+      target_post:document.getElementById('t-post').value,
+      num_questions:+document.getElementById('t-num').value,
+      duration:+document.getElementById('t-dur').value
+    });
+    closeModal('add-test-modal');
+    toast('✅ Test created!');
+    if(document.getElementById('page-mock-test').classList.contains('active')) loadTests();
+  }catch(e){ toast('❌ Failed',false); }
+}
+
+// ─── QUESTION BANK (ADMIN) ────────────────────────────────
+async function loadQuestionsTable(){
+  try{
+    const qs=await api('/api/questions?limit=50');
+    if(!qs.length){
+      document.getElementById('questions-table').innerHTML='<div class="empty-state"><div class="icon">❓</div><p>No questions yet.</p></div>';
+      return;
+    }
+    document.getElementById('questions-table').innerHTML=`
+      <table>
+        <thead><tr><th style="width:40%">Question</th><th>Subject</th><th>Difficulty</th><th>Answer</th><th>Status</th><th>Action</th></tr></thead>
+        <tbody>${qs.map(q=>`
+          <tr>
+            <td style="max-width:280px">${q.text.substring(0,80)}${q.text.length>80?'...':''}</td>
+            <td>${q.subject||'—'}</td>
+            <td>${q.difficulty}</td>
+            <td style="font-weight:700;color:var(--accent)">${q.answer}</td>
+            <td><span class="status-badge status-${q.status}">${q.status}</span></td>
+            <td><button class="btn btn-danger" onclick="deleteQuestion(${q.id})">Delete</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }catch(e){}
+}
+
+async function saveQuestion(){
+  try{
+    await api('/api/questions','POST',{
+      text:document.getElementById('q-text').value,
+      option_a:document.getElementById('q-a').value,
+      option_b:document.getElementById('q-b').value,
+      option_c:document.getElementById('q-c').value,
+      option_d:document.getElementById('q-d').value,
+      answer:document.getElementById('q-ans').value,
+      subject:document.getElementById('q-subject').value,
+      difficulty:document.getElementById('q-diff').value,
+      explanation:document.getElementById('q-exp').value
+    });
+    closeModal('add-question-modal');
+    toast('✅ Question saved!');
+    loadStats();
+    if(document.getElementById('page-admin-questions').classList.contains('active')) loadQuestionsTable();
+  }catch(e){ toast('❌ Failed to save',false); }
+}
+
+async function deleteQuestion(id){
+  if(!confirm('Delete this question?')) return;
+  try{ await api(`/api/questions/${id}`,'DELETE'); toast('🗑️ Deleted'); loadQuestionsTable(); }
+  catch(e){ toast('❌ Failed',false); }
+}
+
+// ─── USERS (ADMIN) ────────────────────────────────────────
+async function loadUsersTable(){
+  try{
+    const users=await api('/api/users');
+    if(!users.length){
+      document.getElementById('users-table').innerHTML='<div class="empty-state"><div class="icon">👤</div><p>No users yet.</p></div>';
+      return;
+    }
+    document.getElementById('users-table').innerHTML=`
+      <table>
+        <thead><tr><th>Name</th><th>Email</th><th>District</th><th>Role</th><th>Joined</th></tr></thead>
+        <tbody>${users.map(u=>`
+          <tr>
+            <td><strong>${u.name}</strong></td>
+            <td>${u.email}</td>
+            <td>${u.district||'—'}</td>
+            <td><span class="status-badge ${u.role==='admin'?'status-draft':'status-active'}">${u.role}</span></td>
+            <td>${new Date(u.created).toLocaleDateString('en-IN')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }catch(e){}
+}
+
+async function saveUser(){
+  try{
+    await api('/api/users','POST',{
+      name:document.getElementById('u-name').value,
+      email:document.getElementById('u-email').value,
+      district:document.getElementById('u-district').value,
+      role:document.getElementById('u-role').value
+    });
+    closeModal('add-user-modal');
+    toast('✅ User added!');
+    loadUsersTable();
+  }catch(e){ toast('❌ Failed. Email may already exist.',false); }
+}
+
+// ─── INIT ─────────────────────────────────────────────────
+loadStats();
+</script>
+</body>
+</html>
