@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -33,7 +33,7 @@ VALID_CATEGORIES = ['Current Affairs', 'GK News', 'PSC Updates']
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.Text, nullable=False)          # unlimited length
+    password_hash = db.Column(db.Text, nullable=False)
 
 class News(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -44,9 +44,41 @@ class News(db.Model):
     category = db.Column(db.String(50), nullable=False, default='Current Affairs')
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
 
+class PageView(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    page = db.Column(db.String(200), nullable=False)         # e.g., '/current-affairs'
+    category = db.Column(db.String(50), nullable=True)       # category if viewing a news article
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# ----------------- HELPER: check if request should be tracked -----------------
+def should_track():
+    """Track only front‑end pages, not admin or static files."""
+    if request.path.startswith('/admin') or request.path.startswith('/static'):
+        return False
+    if request.method != 'GET':
+        return False
+    return True
+
+# ----------------- ANALYTICS TRACKING (before every request) -----------------
+@app.before_request
+def track_page_view():
+    if not should_track():
+        return
+    # Try to get category from a news detail page if it exists
+    category = None
+    if request.path.startswith('/news/') and request.view_args and 'news_id' in request.view_args:
+        news_item = db.session.get(News, request.view_args['news_id'])
+        if news_item:
+            category = news_item.category
+    # For category listing pages, we can set category from the route
+    # (but easier to just leave it null or extract from path)
+    view = PageView(page=request.path, category=category)
+    db.session.add(view)
+    db.session.commit()
 
 # ----------------- ROUTES – FRONTEND -----------------
 @app.route('/')
@@ -149,6 +181,38 @@ def delete_news(news_id):
     db.session.commit()
     flash('News deleted.', 'info')
     return redirect(url_for('admin_dashboard'))
+
+# ----------------- ANALYTICS DASHBOARD -----------------
+@app.route('/admin/analytics')
+@login_required
+def analytics():
+    # Total page views (all time)
+    total_views = PageView.query.count()
+
+    # Most visited pages (all time)
+    most_visited = db.session.query(
+        PageView.page,
+        db.func.count(PageView.id).label('count')
+    ).group_by(PageView.page).order_by(db.desc('count')).limit(10).all()
+
+    # Trending categories (last 7 days), only where category is not null
+    cutoff = datetime.utcnow() - timedelta(days=7)
+    trending = db.session.query(
+        PageView.category,
+        db.func.count(PageView.id).label('count')
+    ).filter(
+        PageView.timestamp >= cutoff,
+        PageView.category != None
+    ).group_by(PageView.category).order_by(db.desc('count')).all()
+
+    # Recent activity (last 20 views)
+    recent_views = PageView.query.order_by(PageView.timestamp.desc()).limit(20).all()
+
+    return render_template('admin/analytics.html',
+                           total_views=total_views,
+                           most_visited=most_visited,
+                           trending=trending,
+                           recent_views=recent_views)
 
 # ----------------- INITIALISE DATABASE -----------------
 @app.before_request
