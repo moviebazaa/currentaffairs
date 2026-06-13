@@ -26,12 +26,14 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'admin_login'
 
+# ----------------- CONSTANTS -----------------
+VALID_CATEGORIES = ['Current Affairs', 'GK News', 'PSC Updates']
+
 # ----------------- MODELS -----------------
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    # Text – no length limit, works with all hash lengths
-    password_hash = db.Column(db.Text, nullable=False)
+    password_hash = db.Column(db.Text, nullable=False)          # unlimited length
 
 class News(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -39,23 +41,40 @@ class News(db.Model):
     summary = db.Column(db.Text, nullable=False)
     content = db.Column(db.Text, nullable=False)
     image_url = db.Column(db.String(500), nullable=True)
+    category = db.Column(db.String(50), nullable=False, default='Current Affairs')
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ----------------- ROUTES (unchanged) -----------------
+# ----------------- ROUTES – FRONTEND -----------------
 @app.route('/')
 def home():
-    news_list = News.query.order_by(News.date_posted.desc()).all()
-    return render_template('index.html', news_list=news_list)
+    latest_news = News.query.order_by(News.date_posted.desc()).limit(6).all()
+    return render_template('index.html', latest_news=latest_news)
 
 @app.route('/news/<int:news_id>')
 def news_detail(news_id):
     news_item = News.query.get_or_404(news_id)
     return render_template('news_detail.html', news=news_item)
 
+@app.route('/current-affairs')
+def current_affairs():
+    news_list = News.query.filter_by(category='Current Affairs').order_by(News.date_posted.desc()).all()
+    return render_template('category.html', news_list=news_list, category_name='Current Affairs')
+
+@app.route('/gk-news')
+def gk_news():
+    news_list = News.query.filter_by(category='GK News').order_by(News.date_posted.desc()).all()
+    return render_template('category.html', news_list=news_list, category_name='GK News')
+
+@app.route('/psc-updates')
+def psc_updates():
+    news_list = News.query.filter_by(category='PSC Updates').order_by(News.date_posted.desc()).all()
+    return render_template('category.html', news_list=news_list, category_name='PSC Important Updates')
+
+# ----------------- ROUTES – ADMIN AUTH -----------------
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated:
@@ -78,6 +97,7 @@ def admin_logout():
     flash('Logged out.', 'info')
     return redirect(url_for('home'))
 
+# ----------------- ROUTES – ADMIN DASHBOARD -----------------
 @app.route('/admin')
 @login_required
 def admin_dashboard():
@@ -91,13 +111,20 @@ def add_news():
         title = request.form['title']
         summary = request.form['summary']
         content = request.form['content']
+        category = request.form.get('category', 'Current Affairs')
         image_url = request.form.get('image_url', '')
-        news_item = News(title=title, summary=summary, content=content, image_url=image_url)
+        news_item = News(
+            title=title,
+            summary=summary,
+            content=content,
+            category=category,
+            image_url=image_url
+        )
         db.session.add(news_item)
         db.session.commit()
         flash('News added successfully.', 'success')
         return redirect(url_for('admin_dashboard'))
-    return render_template('admin/add_news.html')
+    return render_template('admin/add_news.html', categories=VALID_CATEGORIES)
 
 @app.route('/admin/edit/<int:news_id>', methods=['GET', 'POST'])
 @login_required
@@ -107,11 +134,12 @@ def edit_news(news_id):
         news_item.title = request.form['title']
         news_item.summary = request.form['summary']
         news_item.content = request.form['content']
+        news_item.category = request.form.get('category', 'Current Affairs')
         news_item.image_url = request.form.get('image_url', '')
         db.session.commit()
         flash('News updated successfully.', 'success')
         return redirect(url_for('admin_dashboard'))
-    return render_template('admin/edit_news.html', news=news_item)
+    return render_template('admin/edit_news.html', news=news_item, categories=VALID_CATEGORIES)
 
 @app.route('/admin/delete/<int:news_id>')
 @login_required
@@ -122,7 +150,7 @@ def delete_news(news_id):
     flash('News deleted.', 'info')
     return redirect(url_for('admin_dashboard'))
 
-# ----------------- DATABASE INITIALIZATION (safe) -----------------
+# ----------------- INITIALISE DATABASE -----------------
 @app.before_request
 def initialize():
     if not getattr(g, '_db_initialized', False):
