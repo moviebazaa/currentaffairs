@@ -1,27 +1,42 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="mb-4">Latest News</h1>
-{% if news_list %}
+
+<!-- Hero Section -->
+<div class="bg-light p-5 rounded-3 mb-4 text-center">
+    <h1 class="display-4">Welcome to GK Portal</h1>
+    <p class="lead">Your one‑stop destination for Current Affairs, GK News, PSC Updates, and Quizzes.</p>
+    <div class="d-flex justify-content-center gap-2 flex-wrap">
+        <a href="{{ url_for('current_affairs') }}" class="btn btn-primary btn-lg">Current Affairs</a>
+        <a href="{{ url_for('gk_news') }}" class="btn btn-success btn-lg">GK News</a>
+        <a href="{{ url_for('psc_updates') }}" class="btn btn-info btn-lg text-white">PSC Updates</a>
+    </div>
+</div>
+
+<!-- Latest Articles -->
+<h3 class="mb-3">📢 Latest Updates</h3>
+{% if latest_news %}
 <div class="row">
-    {% for news in news_list %}
-    <div class="col-md-6 mb-4">
+    {% for news in latest_news %}
+    <div class="col-md-4 mb-4">
         <div class="card h-100">
             {% if news.image_url %}
             <img src="{{ news.image_url }}" class="card-img-top" alt="{{ news.title }}">
             {% endif %}
             <div class="card-body">
+                <span class="badge bg-secondary mb-2">{{ news.category }}</span>
                 <h5 class="card-title">{{ news.title }}</h5>
-                <p class="card-text">{{ news.summary }}</p>
-                <a href="{{ url_for('news_detail', news_id=news.id) }}" class="btn btn-primary">Read More</a>
+                <p class="card-text">{{ news.summary[:120] }}...</p>
+                <a href="{{ url_for('news_detail', news_id=news.id) }}" class="btn btn-outline-primary btn-sm">Read More</a>
             </div>
             <div class="card-footer text-muted">
-                {{ news.date_posted.strftime('%B %d, %Y') }}
+                {{ news.date_posted.strftime('%b %d, %Y') }}
             </div>
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
-<p>No news articles yet.</p>
+<p>No news articles yet. Check back soon!</p>
 {% endif %}
+
 {% endblock %}
