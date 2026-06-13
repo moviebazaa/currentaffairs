@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="mb-4">{{ category_name }}</h1>
+{% if news_list %}
+<div class="row">
+    {% for news in news_list %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            {% if news.image_url %}
+            <img src="{{ news.image_url }}" class="card-img-top" alt="{{ news.title }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ news.title }}</h5>
+                <p class="card-text">{{ news.summary }}</p>
+                <a href="{{ url_for('news_detail', news_id=news.id) }}" class="btn btn-primary">Read More</a>
+            </div>
+            <div class="card-footer text-muted">
+                {{ news.date_posted.strftime('%B %d, %Y') }}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p>No articles in this category yet.</p>
+{% endif %}
+{% endblock %}
