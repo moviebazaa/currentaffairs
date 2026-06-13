@@ -7,6 +7,14 @@
         <input type="text" name="title" id="title" class="form-control" required>
     </div>
     <div class="mb-3">
+        <label for="category" class="form-label">Category</label>
+        <select name="category" id="category" class="form-select" required>
+            {% for cat in categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
         <label for="summary" class="form-label">Summary</label>
         <textarea name="summary" id="summary" class="form-control" rows="3" required></textarea>
     </div>
