@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>📊 Site Analytics</h1>
+<div class="row mt-4">
+    <!-- Total Page Views -->
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Page Views</h5>
+                <p class="card-text display-4">{{ total_views }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Most Visited Pages -->
+    <div class="col-md-6">
+        <h3>Most Visited Pages</h3>
+        {% if most_visited %}
+        <ul class="list-group">
+            {% for item in most_visited %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ item.page }}
+                <span class="badge bg-primary rounded-pill">{{ item.count }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p>No data yet.</p>
+        {% endif %}
+    </div>
+
+    <!-- Trending Categories (last 7 days) -->
+    <div class="col-md-6">
+        <h3>Trending Categories (Last 7 Days)</h3>
+        {% if trending %}
+        {% for item in trending %}
+        <div class="mb-2">
+            <strong>{{ item.category }}</strong>
+            <div class="progress" style="height: 25px;">
+                <div class="progress-bar bg-success" role="progressbar"
+                     style="width: {{ (item.count / trending[0].count * 100) | int }}%;"
+                     aria-valuenow="{{ item.count }}" aria-valuemin="0"
+                     aria-valuemax="{{ trending[0].count }}">
+                    {{ item.count }} views
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>No category data yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mt-5">
+    <!-- Recent Activity -->
+    <div class="col-12">
+        <h3>Recent Page Visits</h3>
+        {% if recent_views %}
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    <th>Page</th>
+                    <th>Category</th>
+                    <th>Time</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for view in recent_views %}
+                <tr>
+                    <td>{{ view.page }}</td>
+                    <td>{{ view.category or '—' }}</td>
+                    <td>{{ view.timestamp.strftime('%Y-%m-%d %H:%M') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No visits recorded yet.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
