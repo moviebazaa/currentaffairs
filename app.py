@@ -4,6 +4,9 @@ from flask import Flask, render_template, request, redirect, url_for, flash, g
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+import requests
+from bs4 import BeautifulSoup
+from apscheduler.schedulers.background import BackgroundScheduler
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-me')
@@ -42,43 +45,49 @@ class News(db.Model):
     content = db.Column(db.Text, nullable=False)
     image_url = db.Column(db.String(500), nullable=True)
     category = db.Column(db.String(50), nullable=False, default='Current Affairs')
+    source_url = db.Column(db.String(500), nullable=True)
     date_posted = db.Column(db.DateTime, default=datetime.utcnow)
 
 class PageView(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    page = db.Column(db.String(200), nullable=False)         # e.g., '/current-affairs'
-    category = db.Column(db.String(50), nullable=True)       # category if viewing a news article
+    page = db.Column(db.String(200), nullable=False)
+    category = db.Column(db.String(50), nullable=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# ----------------- HELPER: check if request should be tracked -----------------
-def should_track():
-    """Track only front‑end pages, not admin or static files."""
-    if request.path.startswith('/admin') or request.path.startswith('/static'):
-        return False
-    if request.method != 'GET':
-        return False
-    return True
+# ----------------- DATABASE INITIALISATION (runs at startup) -----------------
+with app.app_context():
+    db.create_all()
+    if not User.query.filter_by(username='admin').first():
+        hashed = generate_password_hash('admin123')   # CHANGE after first login!
+        admin_user = User(username='admin', password_hash=hashed)
+        db.session.add(admin_user)
+        db.session.commit()
 
-# ----------------- ANALYTICS TRACKING (before every request) -----------------
+# ----------------- ANALYTICS TRACKING (non-blocking, safe) -----------------
 @app.before_request
 def track_page_view():
-    if not should_track():
+    if request.path.startswith('/admin') or request.path.startswith('/static') or request.path == '/favicon.ico':
         return
-    # Try to get category from a news detail page if it exists
+    if request.method != 'GET':
+        return
+
     category = None
     if request.path.startswith('/news/') and request.view_args and 'news_id' in request.view_args:
         news_item = db.session.get(News, request.view_args['news_id'])
         if news_item:
             category = news_item.category
-    # For category listing pages, we can set category from the route
-    # (but easier to just leave it null or extract from path)
-    view = PageView(page=request.path, category=category)
-    db.session.add(view)
-    db.session.commit()
+
+    try:
+        view = PageView(page=request.path, category=category)
+        db.session.add(view)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Analytics error (non-critical): {e}")
 
 # ----------------- ROUTES – FRONTEND -----------------
 @app.route('/')
@@ -106,7 +115,7 @@ def psc_updates():
     news_list = News.query.filter_by(category='PSC Updates').order_by(News.date_posted.desc()).all()
     return render_template('category.html', news_list=news_list, category_name='PSC Important Updates')
 
-# ----------------- ROUTES – ADMIN AUTH -----------------
+# ----------------- ADMIN AUTH -----------------
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated:
@@ -129,7 +138,7 @@ def admin_logout():
     flash('Logged out.', 'info')
     return redirect(url_for('home'))
 
-# ----------------- ROUTES – ADMIN DASHBOARD -----------------
+# ----------------- ADMIN DASHBOARD -----------------
 @app.route('/admin')
 @login_required
 def admin_dashboard():
@@ -145,12 +154,10 @@ def add_news():
         content = request.form['content']
         category = request.form.get('category', 'Current Affairs')
         image_url = request.form.get('image_url', '')
+        source_url = request.form.get('source_url', '')
         news_item = News(
-            title=title,
-            summary=summary,
-            content=content,
-            category=category,
-            image_url=image_url
+            title=title, summary=summary, content=content,
+            category=category, image_url=image_url, source_url=source_url
         )
         db.session.add(news_item)
         db.session.commit()
@@ -168,6 +175,7 @@ def edit_news(news_id):
         news_item.content = request.form['content']
         news_item.category = request.form.get('category', 'Current Affairs')
         news_item.image_url = request.form.get('image_url', '')
+        news_item.source_url = request.form.get('source_url', '')
         db.session.commit()
         flash('News updated successfully.', 'success')
         return redirect(url_for('admin_dashboard'))
@@ -186,45 +194,87 @@ def delete_news(news_id):
 @app.route('/admin/analytics')
 @login_required
 def analytics():
-    # Total page views (all time)
     total_views = PageView.query.count()
-
-    # Most visited pages (all time)
     most_visited = db.session.query(
-        PageView.page,
-        db.func.count(PageView.id).label('count')
+        PageView.page, db.func.count(PageView.id).label('count')
     ).group_by(PageView.page).order_by(db.desc('count')).limit(10).all()
-
-    # Trending categories (last 7 days), only where category is not null
     cutoff = datetime.utcnow() - timedelta(days=7)
     trending = db.session.query(
-        PageView.category,
-        db.func.count(PageView.id).label('count')
-    ).filter(
-        PageView.timestamp >= cutoff,
-        PageView.category != None
-    ).group_by(PageView.category).order_by(db.desc('count')).all()
-
-    # Recent activity (last 20 views)
+        PageView.category, db.func.count(PageView.id).label('count')
+    ).filter(PageView.timestamp >= cutoff, PageView.category != None).group_by(PageView.category).order_by(db.desc('count')).all()
     recent_views = PageView.query.order_by(PageView.timestamp.desc()).limit(20).all()
+    return render_template('admin/analytics.html', total_views=total_views, most_visited=most_visited, trending=trending, recent_views=recent_views)
 
-    return render_template('admin/analytics.html',
-                           total_views=total_views,
-                           most_visited=most_visited,
-                           trending=trending,
-                           recent_views=recent_views)
+# ----------------- SCRAPER FUNCTIONS -----------------
+def save_article(title, summary, content, category, source_url, image_url=''):
+    existing = News.query.filter_by(source_url=source_url).first()
+    if existing:
+        return
+    article = News(
+        title=title, summary=summary, content=content,
+        category=category, source_url=source_url, image_url=image_url
+    )
+    db.session.add(article)
+    db.session.commit()
 
-# ----------------- INITIALISE DATABASE -----------------
-@app.before_request
-def initialize():
-    if not getattr(g, '_db_initialized', False):
-        db.create_all()
-        if not User.query.filter_by(username='admin').first():
-            hashed = generate_password_hash('admin123')   # change after first login!
-            admin_user = User(username='admin', password_hash=hashed)
-            db.session.add(admin_user)
-            db.session.commit()
-        g._db_initialized = True
+def scrape_kerala_psc():
+    try:
+        url = "https://www.keralapsc.gov.in/notifications"
+        response = requests.get(url, timeout=10)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        for item in soup.select('.view-notifications .views-row')[:10]:
+            link_tag = item.find('a')
+            if not link_tag:
+                continue
+            title = link_tag.get_text(strip=True)
+            link = link_tag.get('href')
+            if not link:
+                continue
+            if not link.startswith('http'):
+                link = 'https://www.keralapsc.gov.in' + link
+            date_tag = item.find('span', class_='date-display-single')
+            summary = date_tag.get_text(strip=True) if date_tag else 'New notification from Kerala PSC'
+            save_article(title, summary, summary, 'PSC Updates', link)
+        print("Kerala PSC scrape completed.")
+    except Exception as e:
+        print(f"Error scraping Kerala PSC: {e}")
+
+def scrape_gk_today():
+    try:
+        url = "https://www.gktoday.in/current-affairs/"
+        response = requests.get(url, timeout=10)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        for article in soup.select('article')[:5]:
+            title_tag = article.find('h2')
+            link_tag = article.find('a')
+            if not title_tag or not link_tag:
+                continue
+            title = title_tag.get_text(strip=True)
+            link = link_tag.get('href')
+            if not link.startswith('http'):
+                link = 'https://www.gktoday.in' + link
+            summary = article.find('p').get_text(strip=True) if article.find('p') else 'Current affairs update'
+            save_article(title, summary, summary, 'Current Affairs', link)
+        print("GK Today scrape completed.")
+    except Exception as e:
+        print(f"Error scraping GK Today: {e}")
+
+def run_all_scrapers():
+    with app.app_context():
+        scrape_kerala_psc()
+        scrape_gk_today()
+
+# ----------------- SCHEDULER -----------------
+scheduler = BackgroundScheduler()
+scheduler.add_job(run_all_scrapers, 'interval', hours=6, id='scraper_job')
+scheduler.start()
+
+@app.route('/admin/scrape')
+@login_required
+def manual_scrape():
+    run_all_scrapers()
+    flash('Scraping triggered manually!', 'success')
+    return redirect(url_for('admin_dashboard'))
 
 if __name__ == '__main__':
     app.run(debug=True)
