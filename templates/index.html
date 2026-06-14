@@ -2,18 +2,22 @@
 {% block content %}
 
 <!-- Hero Section -->
-<div class="bg-light p-5 rounded-3 mb-4 text-center">
-    <h1 class="display-4">Welcome to GK Portal</h1>
-    <p class="lead">Your one‑stop destination for Current Affairs, GK News, PSC Updates, and Quizzes.</p>
-    <div class="d-flex justify-content-center gap-2 flex-wrap">
-        <a href="{{ url_for('current_affairs') }}" class="btn btn-primary btn-lg">Current Affairs</a>
-        <a href="{{ url_for('gk_news') }}" class="btn btn-success btn-lg">GK News</a>
-        <a href="{{ url_for('psc_updates') }}" class="btn btn-info btn-lg text-white">PSC Updates</a>
+<div class="hero-section text-center">
+    <h1 class="display-4 fw-bold mb-3">Stay Updated with GK Portal</h1>
+    <p class="lead mb-4">Your one‑stop destination for Current Affairs, GK News, PSC Updates, and upcoming Quizzes.</p>
+    <div class="d-flex justify-content-center gap-3 flex-wrap">
+        <a href="{{ url_for('current_affairs') }}" class="btn btn-gold btn-lg"><i class="fas fa-globe me-2"></i>Current Affairs</a>
+        <a href="{{ url_for('gk_news') }}" class="btn btn-light btn-lg"><i class="fas fa-book me-2"></i>GK News</a>
+        <a href="{{ url_for('psc_updates') }}" class="btn btn-outline-light btn-lg"><i class="fas fa-bell me-2"></i>PSC Updates</a>
     </div>
 </div>
 
-<!-- Latest Articles -->
-<h3 class="mb-3">📢 Latest Updates</h3>
+<!-- Latest Updates -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold"><i class="fas fa-clock me-2"></i>Latest Updates</h3>
+    <a href="{{ url_for('current_affairs') }}" class="text-decoration-none">View all →</a>
+</div>
+
 {% if latest_news %}
 <div class="row">
     {% for news in latest_news %}
@@ -21,22 +25,29 @@
         <div class="card h-100">
             {% if news.image_url %}
             <img src="{{ news.image_url }}" class="card-img-top" alt="{{ news.title }}">
+            {% else %}
+            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                <i class="fas fa-image fa-3x text-muted"></i>
+            </div>
             {% endif %}
             <div class="card-body">
-                <span class="badge bg-secondary mb-2">{{ news.category }}</span>
+                <span class="badge badge-category mb-2">{{ news.category }}</span>
                 <h5 class="card-title">{{ news.title }}</h5>
-                <p class="card-text">{{ news.summary[:120] }}...</p>
-                <a href="{{ url_for('news_detail', news_id=news.id) }}" class="btn btn-outline-primary btn-sm">Read More</a>
+                <p class="card-text text-muted">{{ news.summary[:120] }}...</p>
+                <a href="{{ url_for('news_detail', news_id=news.id) }}" class="btn btn-primary-custom btn-sm">Read More →</a>
             </div>
-            <div class="card-footer text-muted">
-                {{ news.date_posted.strftime('%b %d, %Y') }}
+            <div class="card-footer bg-white text-muted small">
+                <i class="far fa-calendar-alt me-1"></i>{{ news.date_posted.strftime('%b %d, %Y') }}
             </div>
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
-<p>No news articles yet. Check back soon!</p>
+<div class="text-center py-5">
+    <i class="fas fa-newspaper fa-4x text-muted mb-3"></i>
+    <p class="lead">No articles yet. Check back soon!</p>
+</div>
 {% endif %}
 
 {% endblock %}
