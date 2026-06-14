@@ -1,6 +1,10 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 class="mb-4">{{ category_name }}</h1>
+<div class="d-flex align-items-center mb-4">
+    <i class="fas fa-folder-open fa-2x me-3" style="color: #2a5298;"></i>
+    <h1 class="fw-bold mb-0">{{ category_name }}</h1>
+</div>
+
 {% if news_list %}
 <div class="row">
     {% for news in news_list %}
@@ -8,20 +12,27 @@
         <div class="card h-100">
             {% if news.image_url %}
             <img src="{{ news.image_url }}" class="card-img-top" alt="{{ news.title }}">
+            {% else %}
+            <div class="bg-light d-flex align-items-center justify-content-center" style="height: 180px;">
+                <i class="fas fa-image fa-3x text-muted"></i>
+            </div>
             {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ news.title }}</h5>
-                <p class="card-text">{{ news.summary }}</p>
-                <a href="{{ url_for('news_detail', news_id=news.id) }}" class="btn btn-primary">Read More</a>
+                <p class="card-text text-muted">{{ news.summary[:150] }}...</p>
+                <a href="{{ url_for('news_detail', news_id=news.id) }}" class="btn btn-primary-custom btn-sm">Read More →</a>
             </div>
-            <div class="card-footer text-muted">
-                {{ news.date_posted.strftime('%B %d, %Y') }}
+            <div class="card-footer bg-white text-muted small">
+                <i class="far fa-calendar-alt me-1"></i>{{ news.date_posted.strftime('%B %d, %Y') }}
             </div>
         </div>
     </div>
     {% endfor %}
 </div>
 {% else %}
-<p>No articles in this category yet.</p>
+<div class="text-center py-5">
+    <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+    <p class="lead">No articles in this category yet.</p>
+</div>
 {% endif %}
 {% endblock %}
