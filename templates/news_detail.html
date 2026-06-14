@@ -1,12 +1,36 @@
 {% extends "base.html" %}
 {% block content %}
 <article>
-    <h1>{{ news.title }}</h1>
-    <p class="text-muted">{{ news.date_posted.strftime('%B %d, %Y') }} | <span class="badge bg-secondary">{{ news.category }}</span></p>
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('current_affairs') if news.category == 'Current Affairs' else url_for('gk_news') if news.category == 'GK News' else url_for('psc_updates') }}">{{ news.category }}</a></li>
+            <li class="breadcrumb-item active">{{ news.title }}</li>
+        </ol>
+    </nav>
+
+    <h1 class="fw-bold">{{ news.title }}</h1>
+    <div class="d-flex align-items-center text-muted mb-4">
+        <i class="far fa-calendar-alt me-2"></i>{{ news.date_posted.strftime('%B %d, %Y') }}
+        <span class="mx-2">|</span>
+        <span class="badge badge-category">{{ news.category }}</span>
+    </div>
+
     {% if news.image_url %}
-    <img src="{{ news.image_url }}" class="img-fluid mb-3" alt="{{ news.title }}">
+    <img src="{{ news.image_url }}" class="img-fluid rounded-3 mb-4" alt="{{ news.title }}">
     {% endif %}
-    <div class="mt-3">{{ news.content | replace('\n', '<br>') | safe }}</div>
-    <a href="{{ url_for('home') }}" class="btn btn-secondary mt-3">← Back to Home</a>
+
+    <div class="news-content">
+        {{ news.content | replace('\n', '<br>') | safe }}
+    </div>
+
+    {% if news.source_url %}
+    <div class="mt-4 p-3 bg-light rounded">
+        <strong><i class="fas fa-external-link-alt me-2"></i>Source:</strong>
+        <a href="{{ news.source_url }}" target="_blank" rel="noopener">{{ news.source_url }}</a>
+    </div>
+    {% endif %}
+
+    <a href="{{ url_for('home') }}" class="btn btn-secondary mt-4"><i class="fas fa-arrow-left me-2"></i>Back to Home</a>
 </article>
 {% endblock %}
